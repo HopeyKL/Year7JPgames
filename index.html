@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Japanese Vocab Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Lexend:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one compact column sized for an LMS iframe; topic switch, tab bar, shared controls, game stage */
+:root{
+  --paper:#F2F5FA; --card:#FFFFFF; --ink:#1B2246; --muted:#5A6386; --line:#D7DDEB;
+  --indigo:#2D47A0; --indigo-soft:#E4E9F8; --persimmon:#DE5F28; --persimmon-soft:#FBE8DE; --teal:#1E8C8A; --teal-soft:#DDF2F1;
+  --good:#257A4E; --goodbg:#DDF1E5; --bad:#C2303B; --badbg:#FBE3E5;
+  --jp:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+  --latin:"Lexend",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#111529; --card:#1B2140; --ink:#E8EBF7; --muted:#A2A9C9; --line:#2D3558;
+  --indigo:#8099F2; --indigo-soft:#252E58; --persimmon:#F38652; --persimmon-soft:#3D2519; --teal:#4CC3BF; --teal-soft:#15393A;
+  --good:#6BCF96; --goodbg:#173A29; --bad:#F27C85; --badbg:#3E1D25; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111529; --card:#1B2140; --ink:#E8EBF7; --muted:#A2A9C9; --line:#2D3558;
+  --indigo:#8099F2; --indigo-soft:#252E58; --persimmon:#F38652; --persimmon-soft:#3D2519; --teal:#4CC3BF; --teal-soft:#15393A;
+  --good:#6BCF96; --goodbg:#173A29; --bad:#F27C85; --badbg:#3E1D25; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--latin);font-size:15px;line-height:1.5}
+.wrap{max-width:820px;margin:0 auto;padding-block:16px 28px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px}
+
+ruby{ruby-position:over}
+rt{font-family:var(--latin);font-size:.42em;font-weight:500;color:var(--muted);letter-spacing:.02em}
+.no-romaji rt{visibility:hidden}
+.jp{font-family:var(--jp);font-weight:700}
+
+/* Topic switch */
+.topics{display:flex;gap:8px;flex-wrap:wrap}
+.topic{display:flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:12px;padding:6px 14px 6px 6px;font:600 14px var(--latin);cursor:pointer}
+.topic .mini{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--indigo-soft);color:var(--indigo);font:900 18px var(--jp)}
+.topic[aria-pressed="true"]{border-color:var(--persimmon)}
+.topic[aria-pressed="true"] .mini{background:var(--persimmon);color:#fff}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.seal{width:48px;height:48px;border-radius:12px;background:var(--persimmon);color:#fff;display:grid;place-items:center;
+  font-family:var(--jp);font-weight:900;font-size:30px;line-height:1;flex:none}
+h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.sub{margin:0;color:var(--muted);font-size:13px}
+.ask{font-size:20px;color:var(--indigo)}
+
+.tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;flex-wrap:wrap}
+.tab{flex:1 1 auto;border:0;background:transparent;color:var(--muted);font:600 14px var(--latin);padding:9px 12px;border-radius:9px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--indigo);color:#fff}
+.tab:not([aria-selected="true"]):hover{background:var(--indigo-soft);color:var(--ink)}
+
+.controls{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center}
+.field{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+select{font:500 14px var(--latin);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-width:100%}
+.toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+.toggle input{accent-color:var(--indigo);width:16px;height:16px}
+.btn{font:600 14px var(--latin);border:0;border-radius:9px;padding:8px 14px;cursor:pointer;background:var(--persimmon);color:#fff}
+.spacer{flex:1}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+
+.stage{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;min-height:320px}
+.status{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:12px;font-variant-numeric:tabular-nums}
+.status b{color:var(--ink)}
+
+/* Faces */
+.w-kanji{font-family:var(--jp);font-weight:700;font-size:clamp(22px,5.4vw,38px);line-height:1.2}
+.w-hira,.w-jp{font-family:var(--jp);font-weight:700;font-size:clamp(14px,3.4vw,26px);line-height:1.3;white-space:nowrap}
+.w-num{font-weight:700;font-size:clamp(28px,6vw,44px);color:var(--indigo);font-variant-numeric:tabular-nums}
+.pic{width:100%;max-width:100%;height:auto;display:block}
+.p1{fill:var(--indigo)}.p2{fill:var(--persimmon)}.p3{fill:var(--teal)}
+.w-en{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;line-height:1.2}
+.w-en .em{font-size:clamp(22px,4.6vw,34px);line-height:1}
+.w-en .t{font-weight:600;font-size:clamp(12px,2.4vw,15px)}
+.chip{display:inline-block;font:600 10px var(--latin);letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:99px;margin-top:4px}
+.chip.my{background:var(--persimmon-soft);color:var(--persimmon)}
+.chip.pol{background:var(--teal-soft);color:var(--teal)}
+.stack{display:flex;flex-direction:column;align-items:center}
+
+/* Memory */
+.mem{display:grid;grid-template-columns:repeat(var(--cols,5),minmax(0,1fr));gap:8px}
+.mcard{aspect-ratio:var(--ratio,4/5);border:0;padding:0;background:none;cursor:pointer;perspective:700px;max-width:100%;font:inherit;color:inherit}
+.mcard .in{position:relative;width:100%;height:100%;transition:transform .35s;transform-style:preserve-3d}
+.mcard.up .in,.mcard.done .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:grid;place-items:center;padding:6px;overflow:hidden}
+.back{background:var(--indigo);color:rgba(255,255,255,.28);font-family:var(--jp);font-weight:900;font-size:clamp(26px,6vw,46px)}
+.front{transform:rotateY(180deg);background:var(--paper);border:2px solid var(--line);color:var(--ink)}
+.mcard.done .front{border-color:var(--good);background:var(--goodbg)}
+.mcard.wrong .front{border-color:var(--bad)}
+
+/* Match up */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.tile{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:12px;min-height:70px;padding:6px 10px;
+  display:grid;place-items:center;cursor:pointer;font:inherit}
+.tile .pic{max-width:150px;max-height:52px;width:auto}
+.tile .w-kanji{font-size:30px}.tile .w-hira,.tile .w-jp{font-size:22px}.tile .w-num{font-size:32px}
+.tile .w-en{flex-direction:row;gap:8px}.tile .w-en .em{font-size:24px}.tile .w-en .t{font-size:15px}
+.tile:hover{border-color:var(--indigo)}
+.tile.sel{border-color:var(--indigo);background:var(--indigo-soft)}
+.tile.done{border-color:var(--good);background:var(--goodbg);cursor:default}
+.tile.shake{animation:shake .35s;border-color:var(--bad);background:var(--badbg)}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* Quiz */
+.q{display:flex;flex-direction:column;align-items:center;gap:16px}
+.q .prompt{font-size:14px;color:var(--muted)}
+.q .show{width:min(340px,100%);padding:18px 24px;background:var(--paper);border-radius:14px;display:grid;place-items:center}
+.q .show .w-jp{font-size:40px}
+.q .show .w-en .em{font-size:48px}.q .show .w-en .t{font-size:20px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;max-width:520px}
+.opt{border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:12px;padding:8px;min-height:74px;cursor:pointer;font:inherit;display:grid;place-items:center}
+.opt .w-kanji{font-size:30px}.opt .w-hira,.opt .w-jp{font-size:24px}
+.opt .w-en{flex-direction:row;gap:8px}.opt .w-en .em{font-size:22px}.opt .w-en .t{font-size:15px}
+.opt:hover:not(:disabled){border-color:var(--indigo)}
+.opt.right{border-color:var(--good);background:var(--goodbg)}
+.opt.no{border-color:var(--bad);background:var(--badbg)}
+.opt:disabled{cursor:default}
+
+.win{text-align:center;padding:14px;border-radius:12px;background:var(--goodbg);color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:14px}
+.win strong{font-size:18px}
+
+/* Word list */
+h2{font-size:15px;margin:18px 0 6px;display:flex;align-items:center;gap:8px}
+h2:first-child{margin-top:0}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;font-weight:600;padding:6px 8px;border-bottom:2px solid var(--line)}
+td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td .pic{max-width:120px;max-height:40px;width:auto}
+td .w-kanji{font-size:26px}td .w-hira,td .w-jp{font-size:21px}
+td.n{font-weight:700;color:var(--indigo);font-variant-numeric:tabular-nums}
+td.em{font-size:22px;width:40px}
+.notes{margin:14px 0 0;padding-left:18px;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:4px}
+.notes b{color:var(--ink)}
+
+@media (max-width:480px){
+  .mem{grid-template-columns:repeat(var(--cols-sm,5),minmax(0,1fr))}
+  .cols{gap:10px}
+  .tile .w-kanji{font-size:24px}.tile .w-hira,.tile .w-jp{font-size:17px}
+  .tile .w-en,.opt .w-en{flex-direction:column;gap:2px}.tile .w-en .t{font-size:13px}
+  h1{font-size:19px}
+}
+@media (prefers-reduced-motion:reduce){.mcard .in{transition:none}.tile.shake{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <nav class="topics" aria-label="Topic">
+    <button class="topic" id="topic-counting" data-topic="counting" aria-pressed="true"><span class="mini">人</span>Counting people</button>
+    <button class="topic" id="topic-family" data-topic="family" aria-pressed="false"><span class="mini">家</span>Family</button>
+  </nav>
+
+  <header>
+    <div class="brand">
+      <div class="seal" id="seal" aria-hidden="true">人</div>
+      <div>
+        <h1 id="title"></h1>
+        <p class="sub" id="sub"></p>
+      </div>
+    </div>
+    <div class="ask jp" id="ask"></div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-memory" aria-selected="true" data-tab="memory">Memory</button>
+    <button class="tab" role="tab" id="tab-match" aria-selected="false" data-tab="match">Match up</button>
+    <button class="tab" role="tab" id="tab-quiz" aria-selected="false" data-tab="quiz">Quiz</button>
+    <button class="tab" role="tab" id="tab-list" aria-selected="false" data-tab="list">Word list</button>
+  </div>
+
+  <div class="controls">
+    <span id="fields" style="display:contents"></span>
+    <label class="toggle"><input type="checkbox" id="romaji" checked> Show romaji</label>
+    <span class="spacer"></span>
+    <button class="btn" id="newGame">New game</button>
+  </div>
+
+  <section class="stage" id="stage" aria-live="polite"></section>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const rb=(t,r)=>`<ruby>${t}<rt>${r}</rt></ruby>`;
+const val=id=>{const el=document.getElementById(id);return el?el.value:null};
+
+/* =================== Topic 1: counting people =================== */
+const D=[
+  {n:1,k:'一人',h:'ひとり',r:'hitori',e:'one person'},
+  {n:2,k:'二人',h:'ふたり',r:'futari',e:'two people'},
+  {n:3,k:'三人',h:'さんにん',r:'sannin',e:'three people'},
+  {n:4,k:'四人',h:'よにん',r:'yonin',e:'four people'},
+  {n:5,k:'五人',h:'ごにん',r:'gonin',e:'five people'},
+  {n:6,k:'六人',h:'ろくにん',r:'rokunin',e:'six people'},
+  {n:7,k:'七人',h:'ななにん',r:'nananin',e:'seven people'},
+  {n:8,k:'八人',h:'はちにん',r:'hachinin',e:'eight people'},
+  {n:9,k:'九人',h:'きゅうにん',r:'kyuunin',e:'nine people'},
+  {n:10,k:'十人',h:'じゅうにん',r:'juunin',e:'ten people'}
+];
+function pic(n){
+  const rows=n<=5?1:2, top=n<=5?n:Math.ceil(n/2), W=22, H=34; let g='';
+  for(let i=0;i<n;i++){
+    const row=i<top?0:1, inRow=row?n-top:top, col=row?i-top:i;
+    const x=(top-inRow)*W/2+col*W+11, y=row*H;
+    g+=`<g class="p${i%3+1}"><circle cx="${x}" cy="${y+7}" r="5.5"/><path d="M${x-8} ${y+30} v-8 a8 8 0 0 1 16 0 v8 z"/></g>`;
+  }
+  return `<svg class="pic" viewBox="0 0 ${top*W} ${rows*H}" role="img" aria-label="${n} ${n===1?'person':'people'}">${g}</svg>`;
+}
+function cFace(it,t){
+  if(t==='kanji') return `<span class="w-kanji">${rb(it.k,it.r)}</span>`;
+  if(t==='hira')  return `<span class="w-hira">${rb(it.h,it.r)}</span>`;
+  if(t==='num')   return `<span class="w-num">${it.n}</span>`;
+  return pic(it.n);
+}
+const cPool=()=>{const v=val('range');return v==='1-5'?D.slice(0,5):v==='6-10'?D.slice(5):D.slice()};
+
+const counting={
+  seal:'人', title:'Counting people in Japanese', sub:'1 to 10 people · the counter 〜人', quizTab:'How many?',
+  ask:`${rb('何人','nannin')}${rb('ですか','desu ka')}？`,
+  fields:[
+    {id:'pairType',label:'Match',opts:[['kanji-pic','Kanji ↔ Picture'],['hira-pic','Hiragana ↔ Picture'],['kanji-hira','Kanji ↔ Hiragana'],['hira-num','Hiragana ↔ Number']],
+     show:tab=>tab==='memory'||tab==='match'},
+    {id:'range',label:'Numbers',opts:[['1-5','1–5'],['6-10','6–10'],['all','1–10']],show:tab=>tab!=='list'}
+  ],
+  memory:{all:true, ratio:'4/5'},
+  pairs(){
+    const m={'kanji-pic':['kanji','pic'],'hira-pic':['hira','pic'],'kanji-hira':['kanji','hira'],'hira-num':['hira','num']}[val('pairType')];
+    return cPool().map(it=>({key:it.n,a:cFace(it,m[0]),b:cFace(it,m[1])}));
+  },
+  questions(){
+    const p=cPool(), qs=[]; let last=0;
+    while(qs.length<10){const it=p[Math.floor(Math.random()*p.length)]; if(it.n!==last){qs.push(it);last=it.n}}
+    return qs.map((it,i)=>{
+      const t=i%2?'hira':'kanji';
+      const near=D.filter(d=>d.n!==it.n).sort((x,y)=>Math.abs(x.n-it.n)-Math.abs(y.n-it.n)).slice(0,5);
+      return {prompt:`How many people? Choose the ${t==='kanji'?'kanji':'hiragana'}.`, show:pic(it.n),
+        opts:shuffle([{html:cFace(it,t),ok:true},...shuffle(near).slice(0,3).map(o=>({html:cFace(o,t),ok:false}))])};
+    });
+  },
+  list(){
+    return `<div class="tbl"><table><thead><tr><th></th><th>Picture</th><th>Kanji</th><th>Hiragana</th><th>English</th></tr></thead><tbody>
+    ${D.map(d=>`<tr><td class="n">${d.n}</td><td>${pic(d.n)}</td><td>${cFace(d,'kanji')}</td><td>${cFace(d,'hira')}</td><td>${d.e}</td></tr>`).join('')}
+    </tbody></table></div>
+    <ul class="notes">
+      <li><b>1 and 2 are special:</b> <span class="jp">${rb('ひとり','hitori')}</span> and <span class="jp">${rb('ふたり','futari')}</span>, not "ichinin" or "ninin".</li>
+      <li><b>4 people</b> is <span class="jp">${rb('よにん','yonin')}</span>, not "yonnin" or "shinin".</li>
+      <li><b>7 people</b> can also be <span class="jp">${rb('しちにん','shichinin')}</span>.</li>
+      <li>From 3 up, it is the number + <span class="jp">${rb('にん','nin')}</span>.</li>
+    </ul>`;
+  }
+};
+
+/* =================== Topic 2: family =================== */
+/* set: my = humble (my own family), pol = polite (someone else's family), opt = optional */
+const F=[
+  {id:'kazoku',  jp:'かぞく',   r:'kazoku',  en:'my family',          em:'👨‍👩‍👧‍👦', set:'my', pair:'gokazoku'},
+  {id:'sofu',    jp:'そふ',     r:'sofu',    en:'my grandfather',     em:'👴', set:'my', pair:'ojiisan'},
+  {id:'sobo',    jp:'そぼ',     r:'sobo',    en:'my grandmother',     em:'👵', set:'my', pair:'obaasan'},
+  {id:'chichi',  jp:'父',       kana:'ちち', r:'chichi',  en:'my father', em:'👨', set:'my', pair:'otousan'},
+  {id:'haha',    jp:'母',       kana:'はは', r:'haha',    en:'my mother', em:'👩', set:'my', pair:'okaasan'},
+  {id:'ryoushin',jp:'りょうしん', r:'ryoushin',en:'my parents',        em:'👫', set:'my', pair:'goryoushin'},
+  {id:'ani',     jp:'あに',     r:'ani',     en:'my older brother',   em:'🧑', set:'my', pair:'oniisan'},
+  {id:'ane',     jp:'あね',     r:'ane',     en:'my older sister',    em:'👩‍🦱', set:'my', pair:'oneesan'},
+  {id:'otouto',  jp:'おとうと', r:'otouto',  en:'my younger brother', em:'👦', set:'my', pair:'otoutosan'},
+  {id:'imouto',  jp:'いもうと', r:'imouto',  en:'my younger sister',  em:'👧', set:'my', pair:'imoutosan'},
+  {id:'kyoudai', jp:'きょうだい', r:'kyoudai', en:'siblings',          em:'👧👦', set:'my'},
+
+  {id:'gokazoku',  jp:'ごかぞく',   r:'gokazoku',  en:'your family',    em:'👨‍👩‍👧‍👦', set:'pol'},
+  {id:'ojiisan',   jp:'おじいさん', r:'ojiisan',   en:'grandfather',    em:'👴', set:'pol'},
+  {id:'obaasan',   jp:'おばあさん', r:'obaasan',   en:'grandmother',    em:'👵', set:'pol'},
+  {id:'otousan',   jp:'お父さん',   kana:'おとうさん', r:'otousan', en:'father', em:'👨', set:'pol'},
+  {id:'okaasan',   jp:'お母さん',   kana:'おかあさん', r:'okaasan', en:'mother', em:'👩', set:'pol'},
+  {id:'goryoushin',jp:'ごりょうしん', r:'goryoushin',en:'your parents',  em:'👫', set:'pol'},
+  {id:'oniisan',   jp:'おにいさん', r:'oniisan',   en:'older brother',  em:'🧑', set:'pol'},
+  {id:'oneesan',   jp:'おねえさん', r:'oneesan',   en:'older sister',   em:'👩‍🦱', set:'pol'},
+  {id:'otoutosan', jp:'おとうとさん', r:'otoutosan', en:'younger brother', em:'👦', set:'pol'},
+  {id:'imoutosan', jp:'いもうとさん', r:'imoutosan', en:'younger sister',  em:'👧', set:'pol'},
+
+  {id:'suteppu', jp:'ステップ', r:'suteppu', en:'step (step-family)', em:'🔗', set:'opt'},
+  {id:'itoko',   jp:'いとこ',   r:'itoko',   en:'cousin',             em:'🧑‍🤝‍🧑', set:'opt'},
+  {id:'futago',  jp:'ふたご',   r:'futago',  en:'twins',              em:'👭', set:'opt'}
+];
+const fById=id=>F.find(w=>w.id===id);
+const chip=w=>w.set==='my'?'<span class="chip my">my family</span>':w.set==='pol'?'<span class="chip pol">polite</span>':'';
+const jpFace=(w,tag)=>tag?`<span class="stack"><span class="w-jp">${rb(w.jp,w.r)}</span>${chip(w)}</span>`:`<span class="w-jp">${rb(w.jp,w.r)}</span>`;
+const enFace=w=>`<span class="w-en"><span class="em" aria-hidden="true">${w.em}</span><span class="t">${w.en}</span></span>`;
+const fPool=()=>{const v=val('wordSet');return v==='mix'?F.filter(w=>w.set!=='opt'):F.filter(w=>w.set===v)};
+
+const family={
+  seal:'家', title:'Family words in Japanese', sub:'My family and your family', quizTab:'Who is it?',
+  ask:`${rb('ごかぞく','gokazoku')}${rb('は','wa')}${rb('何人','nannin')}${rb('ですか','desu ka')}？`,
+  fields:[
+    {id:'pairType',label:'Match',opts:[['jp-en','Japanese ↔ English'],['my-your','My family ↔ Your family']],
+     show:tab=>tab==='memory'||tab==='match'},
+    {id:'wordSet',label:'Words',opts:[['my','My family'],['pol','Your family (polite)'],['mix','Both lists'],['opt','Optional words']],
+     show:tab=>tab==='quiz'||((tab==='memory'||tab==='match')&&val('pairType')!=='my-your')}
+  ],
+  memory:{max:6, ratio:'5/4'},
+  pairs(){
+    if(val('pairType')==='my-your')
+      return F.filter(w=>w.pair).map(w=>({key:w.id,a:jpFace(w,true),b:jpFace(fById(w.pair),true)}));
+    return fPool().map(w=>({key:w.id,a:jpFace(w),b:enFace(w)}));
+  },
+  questions(){
+    const p=fPool(), qs=[]; let last=null;
+    while(qs.length<10){const it=p[Math.floor(Math.random()*p.length)]; if(it!==last||p.length===1){qs.push(it);last=it}}
+    const dp=p.length>=4?p:F;
+    return qs.map((it,i)=>{
+      const en=i%2===0, f=w=>en?jpFace(w):enFace(w);
+      return {prompt:en?'Choose the Japanese word.':'What does this mean?', show:en?enFace(it):jpFace(it),
+        opts:shuffle([{html:f(it),ok:true},...shuffle(dp.filter(w=>w!==it)).slice(0,3).map(o=>({html:f(o),ok:false}))])};
+    });
+  },
+  list(){
+    const table=set=>`<div class="tbl"><table><thead><tr><th></th><th>English</th><th>Japanese</th><th>Reading</th></tr></thead><tbody>
+      ${F.filter(w=>w.set===set).map(w=>`<tr><td class="em" aria-hidden="true">${w.em}</td><td>${w.en}</td><td>${jpFace(w)}</td><td>${w.kana?`<span class="w-jp">${rb(w.kana,w.r)}</span>`:''}</td></tr>`).join('')}
+    </tbody></table></div>`;
+    return `
+    <h2><span class="chip my" style="margin:0">my family</span> Talking about your own family</h2>${table('my')}
+    <h2><span class="chip pol" style="margin:0">polite</span> Talking about someone else's family</h2>${table('pol')}
+    <h2>Optional words</h2>${table('opt')}
+    <ul class="notes">
+      <li><b>My family</b> words are humble. Use them when you talk about your own family to other people.</li>
+      <li><b>Polite</b> words are for other people's family. You can also use them to call your own family members, like <span class="jp">${rb('お母さん','okaasan')}</span>!</li>
+      <li><span class="jp">${rb('ステップ','suteppu')}</span> is written in katakana because it comes from English "step".</li>
+    </ul>`;
+  }
+};
+
+/* =================== Shared game engine =================== */
+const TOPICS={counting,family};
+let topicKey='counting', tab='memory';
+const T=()=>TOPICS[topicKey];
+const stage=$('#stage');
+const winMsg=extra=>`<div class="win"><strong class="jp">${rb('よくできました','yoku dekimashita')}！</strong><span>${extra}</span><button class="btn" data-again>Play again</button></div>`;
+stage.addEventListener('click',e=>{if(e.target.closest('[data-again]'))render()});
+
+function memory(){
+  const cfg=T().memory;
+  let ps=shuffle(T().pairs()); if(cfg.max) ps=ps.slice(0,cfg.max);
+  const cards=shuffle(ps.flatMap(p=>[{key:p.key,side:'a',html:p.a},{key:p.key,side:'b',html:p.b}]));
+  const n=cards.length, cols=n%4===0&&n%5!==0?4:5, colsSm=n===12?3:cols;
+  let open=[], lock=false, moves=0, found=0;
+  stage.innerHTML=`<div class="status"><span>Flip two cards. Find the pairs.</span><span>Moves <b id="mv">0</b> · Pairs <b id="pf">0</b>/${ps.length}</span></div>
+    <div class="mem" id="mem" style="--cols:${cols};--cols-sm:${colsSm};--ratio:${cfg.ratio}"></div><div id="end"></div>`;
+  const grid=$('#mem');
+  cards.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='mcard'; b.id='m'+i; b.setAttribute('aria-label','Hidden card');
+    b.innerHTML=`<div class="in"><div class="face back">${T().seal}</div><div class="face front">${c.html}</div></div>`;
+    b.onclick=()=>{
+      if(lock||b.classList.contains('up')||b.classList.contains('done'))return;
+      b.classList.add('up'); b.removeAttribute('aria-label');
+      open.push([b,c]);
+      if(open.length<2)return;
+      moves++; $('#mv').textContent=moves;
+      const [[b1,c1],[b2,c2]]=open; open=[];
+      if(c1.key===c2.key&&c1.side!==c2.side){
+        b1.classList.add('done');b2.classList.add('done');found++;$('#pf').textContent=found;
+        if(found===ps.length) $('#end').innerHTML=winMsg(`All ${ps.length} pairs in ${moves} moves.`);
+      }else{
+        lock=true;b1.classList.add('wrong');b2.classList.add('wrong');
+        setTimeout(()=>{[b1,b2].forEach(x=>{x.classList.remove('up','wrong');x.setAttribute('aria-label','Hidden card')});lock=false},1000);
+      }
+    };
+    grid.appendChild(b);
+  });
+}
+
+function matchup(){
+  let queue=shuffle(T().pairs()), mistakes=0, round=0;
+  const rounds=Math.ceil(queue.length/5);
+  function next(){
+    const set=queue.splice(0,5); round++;
+    let sel=null, done=0;
+    stage.innerHTML=`<div class="status"><span>Tap a card on the left, then its match on the right.</span><span>Round <b>${round}</b>/${rounds} · Mistakes <b id="mk">${mistakes}</b></span></div>
+      <div class="cols"><div class="col" id="L"></div><div class="col" id="R"></div></div><div id="end"></div>`;
+    const mk=(p,side,i)=>{
+      const el=document.createElement('button');
+      el.className='tile';el.id=side+i;el.dataset.k=p.key;el.dataset.side=side;el.innerHTML=side==='L'?p.a:p.b;
+      el.onclick=()=>{
+        if(el.classList.contains('done'))return;
+        if(!sel||sel.dataset.side===side){ if(sel)sel.classList.remove('sel'); sel=el; el.classList.add('sel'); return; }
+        if(sel.dataset.k===el.dataset.k){
+          sel.classList.remove('sel');sel.classList.add('done');el.classList.add('done');sel=null;done++;
+          if(done===set.length){
+            if(queue.length){
+              $('#end').innerHTML=`<div class="win"><strong>Round ${round} done!</strong><button class="btn" id="nx">Next round</button></div>`;
+              $('#nx').onclick=next;
+            }else $('#end').innerHTML=winMsg(`Finished with ${mistakes} mistake${mistakes===1?'':'s'}.`);
+          }
+        }else{
+          mistakes++;$('#mk').textContent=mistakes;
+          const s=sel; s.classList.remove('sel'); sel=null;
+          [s,el].forEach(x=>{x.classList.remove('shake');void x.offsetWidth;x.classList.add('shake');setTimeout(()=>x.classList.remove('shake'),400)});
+        }
+      };
+      return el;
+    };
+    shuffle(set).forEach((p,i)=>$('#L').appendChild(mk(p,'L',i)));
+    shuffle(set).forEach((p,i)=>$('#R').appendChild(mk(p,'R',i)));
+  }
+  next();
+}
+
+function quiz(){
+  const qs=T().questions(); let i=0, score=0;
+  function show(){
+    if(i===qs.length){
+      stage.innerHTML=score>=8?winMsg(`${score} / ${qs.length} correct.`)
+        :`<div class="win"><strong>${score} / ${qs.length}</strong><span>Keep practising. Look at the Word list tab, then play again.</span><button class="btn" data-again>Play again</button></div>`;
+      return;
+    }
+    const q=qs[i];
+    stage.innerHTML=`<div class="status"><span>Question <b>${i+1}</b>/${qs.length}</span><span>Score <b>${score}</b></span></div>
+      <div class="q"><span class="prompt">${q.prompt}</span><div class="show">${q.show}</div><div class="opts" id="opts"></div></div>`;
+    q.opts.forEach((o,j)=>{
+      const b=document.createElement('button');b.className='opt';b.id='o'+j;b.innerHTML=o.html;
+      b.onclick=()=>{
+        const all=document.querySelectorAll('.opt'); all.forEach(x=>x.disabled=true);
+        if(o.ok){b.classList.add('right');score++}
+        else{b.classList.add('no');all[q.opts.findIndex(x=>x.ok)].classList.add('right')}
+        setTimeout(()=>{i++;show()},o.ok?900:1800);
+      };
+      $('#opts').appendChild(b);
+    });
+  }
+  show();
+}
+
+const GAMES={memory,match:matchup,quiz,list:()=>{stage.innerHTML=T().list()}};
+
+function buildTopic(){
+  const t=T();
+  $('#seal').textContent=t.seal; $('#title').textContent=t.title; $('#sub').textContent=t.sub;
+  $('#ask').innerHTML=t.ask; $('#tab-quiz').textContent=t.quizTab;
+  document.title=t.title.replace(' in Japanese','')+' · Japanese Vocab Games';
+  $('#fields').innerHTML=t.fields.map(f=>`<label class="field" id="f-${f.id}">${f.label}
+    <select id="${f.id}">${f.opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label>`).join('');
+  t.fields.forEach(f=>document.getElementById(f.id).onchange=render);
+  document.querySelectorAll('.topic').forEach(b=>b.setAttribute('aria-pressed',b.dataset.topic===topicKey));
+}
+function render(){
+  T().fields.forEach(f=>document.getElementById('f-'+f.id).hidden=!f.show(tab));
+  $('#newGame').hidden=(tab==='list');
+  GAMES[tab]();
+}
+function setTopic(k){
+  topicKey=TOPICS[k]?k:'counting';
+  buildTopic(); render();
+}
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  tab=t.dataset.tab;
+  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));
+  render();
+});
+document.querySelectorAll('.topic').forEach(b=>b.onclick=()=>{
+  if(location.hash!=='#'+b.dataset.topic) location.hash=b.dataset.topic; else setTopic(b.dataset.topic);
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+$('#newGame').onclick=render;
+$('#romaji').onchange=e=>document.body.classList.toggle('no-romaji',!e.target.checked);
+setTopic(location.hash.slice(1));
+</script>
+</body>
+</html>
